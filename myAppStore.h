@@ -37,5 +37,7 @@ struct hash_table_entry {
 
 int parseNumberOfCategories(FILE *stream);
 void parseCategories(FILE *stream, struct categories categories[], int numberOfCategories);
+int parseNumberOfApps(FILE *stream);
+void parseApps(FILE *stream, struct app_info appInfo[], int numberOfApps);
 
 #endif
