@@ -39,5 +39,6 @@ int parseNumberOfCategories(FILE *stream);
 void parseCategories(FILE *stream, struct categories categories[], int numberOfCategories);
 int parseNumberOfApps(FILE *stream);
 void parseApps(FILE *stream, struct app_info appInfo[], int numberOfApps);
+void queryAppStore(struct app_info appInfo[], int numberOfApps, char *queryString, FILE *ostream);
 
 #endif

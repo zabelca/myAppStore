@@ -51,11 +51,22 @@ int parseNumberOfApps(FILE *stream) {
 void parseApps(FILE *stream, struct app_info appInfo[], int numberOfApps) {
   for (int i = 0; i < numberOfApps; i++) {
     parseString(stream, appInfo[i].category, CAT_NAME_LEN);
-    parseString(stream, appInfo[i].app_name, CAT_NAME_LEN);
-    parseString(stream, appInfo[i].version, CAT_NAME_LEN);
+    parseString(stream, appInfo[i].app_name, APP_NAME_LEN);
+    parseString(stream, appInfo[i].version, VERSION_LEN);
     appInfo[i].size = parseFloat(stream);
-    parseString(stream, appInfo[i].units, CAT_NAME_LEN);
+    parseString(stream, appInfo[i].units, UNIT_SIZE);
     appInfo[i].price = parseFloat(stream);
   }
 }
 
+void queryAppStore(struct app_info appInfo[], int numberOfApps, char *queryString, FILE *ostream) {
+  char name[APP_NAME_LEN];
+  sscanf(queryString, "%*s %*s %[^\n]", name);
+  for (int i = 0; i < numberOfApps; i++) {
+    if (strcmp(name, appInfo[i].app_name) == 0) {
+      fprintf(ostream, "Found Application: %s\n", name);
+      return;
+    }
+  }
+  fprintf(ostream, "Application %s not found\n", name);
+}

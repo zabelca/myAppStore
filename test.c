@@ -11,7 +11,7 @@ int tests_run = 0;
 static char *test_can_parse_count_for_one_category() {
   char buffer[] = "1\nGames";
   FILE *stream;
-  stream = (FILE*)fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
+  stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   int categoriesCount = parseNumberOfCategories(stream);
   fclose(stream);
   mu_assert("TEST FAIL: count of categories != 1", categoriesCount == 1);
@@ -28,7 +28,7 @@ static char *test_can_parse_count_for_two_category() {
 
 static char *test_can_parse_three_category() {
   char buffer[] = "Games\nMedical\nSocial Networking\n";
-  FILE *stream = (FILE*)fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
+  FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct categories categories[3];
   parseCategories(stream, categories, 3);
   fclose(stream);
@@ -41,7 +41,7 @@ static char *test_can_parse_three_category() {
 static char *test_can_parse_count_for_one_app() {
   char buffer[] = "1\n";
   FILE *stream;
-  stream = (FILE*)fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
+  stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   int appCount = parseNumberOfApps(stream);
   fclose(stream);
   mu_assert("TEST FAIL: count of apps != 1", appCount == 1);
@@ -132,6 +132,40 @@ static char *test_can_parse_a_second_app() {
   return 0;
 }
 
+static char *test_find_missing_app_with_no_parsed_apps() {
+  char buffer[] = "Games\nMinecraft: Pocket Edition\n0.12.1\n24.1\nMB\n6.99\nGames\nFIFA 16 Ultimate Team\n2.0\n1.25\nGB\n0.00\n";
+  FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
+  struct app_info appInfo[2];
+  parseApps(stream, appInfo, 2);
+  fclose(stream);
+
+  char obuffer[256] = {0};
+  FILE *ostream = fmemopen(obuffer, 256, "w");
+  queryAppStore(appInfo, 2, "find app foo", ostream);
+  fflush(ostream);
+  mu_assert("TEST FAIL: find missing app != 'Application foo not found<CR>'", strcmp(obuffer, "Application foo not found\n") == 0);
+  fclose(ostream);
+  return 0;
+}
+
+static char *test_find_app_prints_found_message() {
+  char buffer[] = "Games\nMinecraft: Pocket Edition\n0.12.1\n24.1\nMB\n6.99\nGames\nFIFA 16 Ultimate Team\n2.0\n1.25\nGB\n0.00\n";
+  FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
+  struct app_info appInfo[2];
+  parseApps(stream, appInfo, 2);
+  fclose(stream);
+
+  char obuffer[256] = {0};
+  FILE *ostream = fmemopen(obuffer, 256, "w");
+  queryAppStore(appInfo, 2, "find app Minecraft: Pocket Edition", ostream);
+  fflush(ostream);
+
+  mu_assert("TEST FAIL: find app first line != 'Found Application: Minecraft: Pocket Edition<CR>'", strcmp(obuffer, "Found Application: Minecraft: Pocket Edition\n") == 0);
+
+  fclose(ostream);
+  return 0;
+}
+
 static char *allTests() {
   mu_run_test(test_can_parse_count_for_one_category);
   mu_run_test(test_can_parse_count_for_two_category);
@@ -145,6 +179,8 @@ static char *allTests() {
   mu_run_test(test_can_parse_app_units);
   mu_run_test(test_can_parse_app_price);
   mu_run_test(test_can_parse_a_second_app);
+  mu_run_test(test_find_missing_app_with_no_parsed_apps);
+  mu_run_test(test_find_app_prints_found_message);
   return 0;
 }
 
