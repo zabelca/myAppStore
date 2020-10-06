@@ -53,5 +53,6 @@ void parseApps(FILE *stream, struct app_info appInfo[], int numberOfApps) {
   parseString(stream, appInfo[0].app_name, CAT_NAME_LEN);
   parseString(stream, appInfo[0].version, CAT_NAME_LEN);
   appInfo[0].size = parseFloat(stream);
+  parseString(stream, appInfo[0].units, CAT_NAME_LEN);
 }
 

@@ -89,6 +89,15 @@ static char *test_can_parse_app_size() {
   return 0;
 }
 
+static char *test_can_parse_app_units() {
+  char buffer[] = "Games\nMinecraft: Pocket Edition\n0.12.1\n24.1\nMB\n6.99\n";
+  FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
+  struct app_info appInfo[1];
+  parseApps(stream, appInfo, 1);
+  mu_assert("TEST FAIL: units for first app != 'MB'", strcmp(appInfo[0].units, "MB") == 0);
+  return 0;
+}
+
 static char *allTests() {
   mu_run_test(test_can_parse_count_for_one_category);
   mu_run_test(test_can_parse_count_for_two_category);
@@ -99,6 +108,7 @@ static char *allTests() {
   mu_run_test(test_can_parse_app_name);
   mu_run_test(test_can_parse_app_version);
   mu_run_test(test_can_parse_app_size);
+  mu_run_test(test_can_parse_app_units);
   return 0;
 }
 
