@@ -13,6 +13,7 @@ static char *test_can_parse_count_for_one_category() {
   FILE *stream;
   stream = (FILE*)fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   int categoriesCount = parseNumberOfCategories(stream);
+  fclose(stream);
   mu_assert("TEST FAIL: count of categories != 1", categoriesCount == 1);
   return 0;
 }
@@ -30,6 +31,7 @@ static char *test_can_parse_three_category() {
   FILE *stream = (FILE*)fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct categories categories[3];
   parseCategories(stream, categories, 3);
+  fclose(stream);
   mu_assert("TEST FAIL: categories[0].category != 'Games'", strcmp(categories[0].category, "Games") == 0);
   mu_assert("TEST FAIL: categories[1].category != 'Medical'", strcmp(categories[1].category, "Medical") == 0);
   mu_assert("TEST FAIL: categories[2].category != 'Social Networking'", strcmp(categories[2].category, "Social Networking") == 0);
@@ -41,6 +43,7 @@ static char *test_can_parse_count_for_one_app() {
   FILE *stream;
   stream = (FILE*)fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   int appCount = parseNumberOfApps(stream);
+  fclose(stream);
   mu_assert("TEST FAIL: count of apps != 1", appCount == 1);
   return 0;
 }
@@ -49,6 +52,7 @@ static char *test_can_parse_count_for_two_apps() {
   char buffer[] = "2\n";
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   int appCount = parseNumberOfApps(stream);
+  fclose(stream);
   mu_assert("TEST FAIL: count of apps != 2", appCount == 2);
   return 0;
 }
@@ -58,6 +62,7 @@ static char *test_can_parse_app_category() {
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct app_info appInfo[1];
   parseApps(stream, appInfo, 1);
+  fclose(stream);
   mu_assert("TEST FAIL: category for first app != 'Games'", strcmp(appInfo[0].category, "Games") == 0);
   return 0;
 }
@@ -67,6 +72,7 @@ static char *test_can_parse_app_name() {
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct app_info appInfo[1];
   parseApps(stream, appInfo, 1);
+  fclose(stream);
   mu_assert("TEST FAIL: name for first app != 'Minecraft: Pocket Edition'", strcmp(appInfo[0].app_name, "Minecraft: Pocket Edition") == 0);
   return 0;
 }
@@ -76,6 +82,7 @@ static char *test_can_parse_app_version() {
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct app_info appInfo[1];
   parseApps(stream, appInfo, 1);
+  fclose(stream);
   mu_assert("TEST FAIL: verson for first app != '0.12.1'", strcmp(appInfo[0].version, "0.12.1") == 0);
   return 0;
 }
@@ -85,6 +92,7 @@ static char *test_can_parse_app_size() {
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct app_info appInfo[1];
   parseApps(stream, appInfo, 1);
+  fclose(stream);
   mu_assert("TEST FAIL: size for first app != 24.1", appInfo[0].size == (float)24.1);
   return 0;
 }
@@ -94,6 +102,7 @@ static char *test_can_parse_app_units() {
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct app_info appInfo[1];
   parseApps(stream, appInfo, 1);
+  fclose(stream);
   mu_assert("TEST FAIL: units for first app != 'MB'", strcmp(appInfo[0].units, "MB") == 0);
   return 0;
 }
@@ -103,6 +112,7 @@ static char *test_can_parse_app_price() {
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct app_info appInfo[1];
   parseApps(stream, appInfo, 1);
+  fclose(stream);
   mu_assert("TEST FAIL: price for first app != 6.99", appInfo[0].price == (float)6.99);
   return 0;
 }
@@ -112,6 +122,7 @@ static char *test_can_parse_a_second_app() {
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
   struct app_info appInfo[2];
   parseApps(stream, appInfo, 2);
+  fclose(stream);
   mu_assert("TEST FAIL: category for second app != 'Games'", strcmp(appInfo[1].category, "Games") == 0);
   mu_assert("TEST FAIL: name for second app != 'FIFA 16 Ultimate Team'", strcmp(appInfo[1].app_name, "FIFA 16 Ultimate Team") == 0);
   mu_assert("TEST FAIL: verson for second app != '2.0'", strcmp(appInfo[1].version, "2.0") == 0);
