@@ -107,6 +107,20 @@ static char *test_can_parse_app_price() {
   return 0;
 }
 
+static char *test_can_parse_a_second_app() {
+  char buffer[] = "Games\nMinecraft: Pocket Edition\n0.12.1\n24.1\nMB\n6.99\nGames\nFIFA 16 Ultimate Team\n2.0\n1.25\nGB\n0.00\n";
+  FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
+  struct app_info appInfo[2];
+  parseApps(stream, appInfo, 2);
+  mu_assert("TEST FAIL: category for second app != 'Games'", strcmp(appInfo[1].category, "Games") == 0);
+  mu_assert("TEST FAIL: name for second app != 'FIFA 16 Ultimate Team'", strcmp(appInfo[1].app_name, "FIFA 16 Ultimate Team") == 0);
+  mu_assert("TEST FAIL: verson for second app != '2.0'", strcmp(appInfo[1].version, "2.0") == 0);
+  mu_assert("TEST FAIL: size for second app != 1.25", appInfo[1].size == (float)1.25);
+  mu_assert("TEST FAIL: units for second app != 'GB'", strcmp(appInfo[1].units, "GB") == 0);
+  mu_assert("TEST FAIL: price for second app != 0.00", appInfo[1].price == (float)0.00);
+  return 0;
+}
+
 static char *allTests() {
   mu_run_test(test_can_parse_count_for_one_category);
   mu_run_test(test_can_parse_count_for_two_category);
@@ -119,6 +133,7 @@ static char *allTests() {
   mu_run_test(test_can_parse_app_size);
   mu_run_test(test_can_parse_app_units);
   mu_run_test(test_can_parse_app_price);
+  mu_run_test(test_can_parse_a_second_app);
   return 0;
 }
 

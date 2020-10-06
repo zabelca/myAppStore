@@ -49,11 +49,13 @@ int parseNumberOfApps(FILE *stream) {
 }
 
 void parseApps(FILE *stream, struct app_info appInfo[], int numberOfApps) {
-  parseString(stream, appInfo[0].category, CAT_NAME_LEN);
-  parseString(stream, appInfo[0].app_name, CAT_NAME_LEN);
-  parseString(stream, appInfo[0].version, CAT_NAME_LEN);
-  appInfo[0].size = parseFloat(stream);
-  parseString(stream, appInfo[0].units, CAT_NAME_LEN);
-  appInfo[0].price = parseFloat(stream);
+  for (int i = 0; i < numberOfApps; i++) {
+    parseString(stream, appInfo[i].category, CAT_NAME_LEN);
+    parseString(stream, appInfo[i].app_name, CAT_NAME_LEN);
+    parseString(stream, appInfo[i].version, CAT_NAME_LEN);
+    appInfo[i].size = parseFloat(stream);
+    parseString(stream, appInfo[i].units, CAT_NAME_LEN);
+    appInfo[i].price = parseFloat(stream);
+  }
 }
 
