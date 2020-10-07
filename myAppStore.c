@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 
 static int parseInteger(FILE *stream) {
@@ -34,39 +35,107 @@ static void parseString(FILE *stream, char *dest, size_t maxLen) {
   free(line);
 }
 
-int parseNumberOfCategories(FILE *stream) {
-  return parseInteger(stream);
+static void parseApp(FILE *stream, struct app_info *appInfo) {
+  parseString(stream, appInfo->category, CAT_NAME_LEN);
+  parseString(stream, appInfo->app_name, APP_NAME_LEN);
+  parseString(stream, appInfo->version, VERSION_LEN);
+  appInfo->size = parseFloat(stream);
+  parseString(stream, appInfo->units, UNIT_SIZE);
+  appInfo->price = parseFloat(stream);
 }
 
-void parseCategories(FILE *stream, struct categories categories[], int numberOfCategories) {
-  for (int i = 0; i < numberOfCategories; i++) {
-    parseString(stream, categories[i].category, CAT_NAME_LEN);
+/* static void queryAppStore(struct app_info appInfo[], int numberOfApps, char *queryString, FILE *ostream) { */
+/*   char name[APP_NAME_LEN]; */
+/*   sscanf(queryString, "%*s %*s %[^\n]", name); */
+/*   for (int i = 0; i < numberOfApps; i++) { */
+/*     if (strcmp(name, appInfo[i].app_name) == 0) { */
+/*       fprintf(ostream, "Found Application: %s\n", name); */
+/*       return; */
+/*     } */
+/*   } */
+/*   fprintf(ostream, "Application %s not found\n", name); */
+/* } */
+
+void parseAndCreateCategories(FILE *stream, struct categories **categories, int *categoriesCount) {
+  *categoriesCount = parseInteger(stream);
+  *categories = (struct categories *)malloc(*categoriesCount * sizeof(struct categories));
+  for (int i = 0; i < *categoriesCount; i++) {
+    parseString(stream, (*categories)[i].category, CAT_NAME_LEN);
+    (*categories)[i].root = NULL; // Should be NULL until first app is added to category.
   }
 }
 
-int parseNumberOfApps(FILE *stream) {
-  return parseInteger(stream);
-}
-
-void parseApps(FILE *stream, struct app_info appInfo[], int numberOfApps) {
-  for (int i = 0; i < numberOfApps; i++) {
-    parseString(stream, appInfo[i].category, CAT_NAME_LEN);
-    parseString(stream, appInfo[i].app_name, APP_NAME_LEN);
-    parseString(stream, appInfo[i].version, VERSION_LEN);
-    appInfo[i].size = parseFloat(stream);
-    parseString(stream, appInfo[i].units, UNIT_SIZE);
-    appInfo[i].price = parseFloat(stream);
+void destroyTree(struct tree **branch) {
+  if (*branch != NULL) {
+    if ((*branch)->left != NULL) {
+      destroyTree(&((*branch)->left));
+    }
+    if ((*branch)->right != NULL) {
+      destroyTree(&((*branch)->right));
+    }
+    free(*branch);
+    *branch = NULL;
   }
 }
 
-void queryAppStore(struct app_info appInfo[], int numberOfApps, char *queryString, FILE *ostream) {
-  char name[APP_NAME_LEN];
-  sscanf(queryString, "%*s %*s %[^\n]", name);
-  for (int i = 0; i < numberOfApps; i++) {
-    if (strcmp(name, appInfo[i].app_name) == 0) {
-      fprintf(ostream, "Found Application: %s\n", name);
-      return;
+void destroyCategories(struct categories **categories, int categoriesCount) {
+  for (int i = 0; i < categoriesCount; i++) {
+    destroyTree(&((*categories)[i].root));
+  }
+  free(*categories);
+  *categories = NULL;
+}
+
+static struct categories *findCategory(struct categories *categories, int categoriesCount, struct app_info appInfo) {
+  for (int j = 0; j < categoriesCount; j++) {
+    if (strcmp(appInfo.category, categories[j].category) == 0) {
+      return &(categories[j]);
     }
   }
-  fprintf(ostream, "Application %s not found\n", name);
+  return NULL;
 }
+
+static void createTree(struct tree **branch, struct app_info appInfo) {
+  *branch = (struct tree*)malloc(sizeof(struct tree));
+  (*branch)->record = appInfo;
+  (*branch)->left = NULL;
+  (*branch)->right = NULL;
+}
+
+static void addAppToTree(struct tree *branch, struct app_info appInfo) {
+  if (strcmp(appInfo.app_name, branch->record.app_name) < 0) {
+    if (branch->left == NULL) {
+      createTree(&(branch->left), appInfo);
+    } else {
+      addAppToTree(branch->left, appInfo);
+    }
+  } else if (strcmp(appInfo.app_name, branch->record.app_name) > 0) {
+    if (branch->right == NULL) {
+      createTree(&(branch->right), appInfo);
+    } else {
+      addAppToTree(branch->right, appInfo);
+    }
+  } else {
+    fprintf(stderr, "Error: Found duplicate app name\n");
+    assert(0); // We should never get here.
+  }
+}
+
+static void addAppToCategory(struct categories *category, struct app_info appInfo) {
+  if (category->root == NULL) {
+    createTree(&(category->root), appInfo);
+  } else {
+    addAppToTree(category->root, appInfo);
+  }
+}
+
+void parseAndCreateApplications(FILE *stream, struct categories *categories, int categoriesCount) {
+  int numberOfApps = parseInteger(stream);
+  for (int i = 0; i < numberOfApps; i++) {
+    struct app_info appInfo;
+    parseApp(stream, &appInfo);
+    struct categories *foundCategory = findCategory(categories, categoriesCount, appInfo);
+    addAppToCategory(foundCategory, appInfo);
+  }
+}
+

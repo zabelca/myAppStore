@@ -35,10 +35,24 @@ struct hash_table_entry {
   struct hash_table_entry *next; // pointer to next entry
 };
 
-int parseNumberOfCategories(FILE *stream);
-void parseCategories(FILE *stream, struct categories categories[], int numberOfCategories);
-int parseNumberOfApps(FILE *stream);
-void parseApps(FILE *stream, struct app_info appInfo[], int numberOfApps);
-void queryAppStore(struct app_info appInfo[], int numberOfApps, char *queryString, FILE *ostream);
+// Reads from `stream` and parses the input to create the categories array.
+// INPUT:
+//    stream - input stream where the text to parse will be read
+//    categories - (OUTPUT) pointer that will be redirected to the newly allocated categories array
+//    categoriesCount - (OUTPUT) number of categories created
+void parseAndCreateCategories(FILE *stream, struct categories **categories, int *categoriesCount);
+
+// Frees memory allocated in `parseAndCreateCategories`
+// INPUT:
+//    categories - (OUTPUT) pointer that will be set to NULL after freed
+//    categoriesCount - number of categories
+void destroyCategories(struct categories **categories, int categoriesCount);
+
+// Puts the app into the binary tree.
+// INPUT:
+//    stream - input stream where the text to parse will be read
+//    categories - Array of all categories
+//    categoriesCount - Number of categories
+void parseAndCreateApplications(FILE *stream, struct categories *categories, int categoriesCount);
 
 #endif
