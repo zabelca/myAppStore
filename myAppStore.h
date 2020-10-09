@@ -53,6 +53,12 @@ void destroyCategories(struct categories **categories, int categoriesCount);
 //    stream - input stream where the text to parse will be read
 //    categories - Array of all categories
 //    categoriesCount - Number of categories
-void parseAndCreateApplications(FILE *stream, struct categories *categories, int categoriesCount);
+//    hashTable - 
+//    hashTableSize - 
+void parseAndCreateApplications(FILE *stream,
+                                struct categories *categories,
+                                int categoriesCount,
+                                struct hash_table_entry **hashTable,
+                                int *hashTableSize);
 
 #endif

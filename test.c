@@ -52,27 +52,31 @@ static char *test_can_destroy_categories() {
   return 0;
 }
 
-static void appTestInit(struct categories *categories, int categoriesCount) {
+static void appTestInit(struct categories *categories, int categoriesCount, struct hash_table_entry **hashTable, int *hashTableSize) {
   char buffer[] = "2\nGames\nMinecraft: Pocket Edition\n0.12.1\n24.1\nMB\n6.99\nGames\nFIFA 16 Ultimate Team\n2.0\n1.25\nGB\n0.00\n";
   FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
-  parseAndCreateApplications(stream, categories, categoriesCount);
+  parseAndCreateApplications(stream, categories, categoriesCount, hashTable, hashTableSize);
   fclose(stream);
 }
 
 static char *test_can_create_root_record() {
   struct categories *categories = NULL;
+  struct hash_table_entry *hashTable = NULL;
+  int hashTableSize;
   int categoriesCount = 0;
   categoryTestInit(&categories, &categoriesCount);
-  appTestInit(categories, categoriesCount);
+  appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
   mu_assert("TEST FAIL: root app name != 'Minecraft ...'", strcmp(categories[0].root->record.app_name, "Minecraft: Pocket Edition") == 0);
   return 0;
 }
 
 static char *test_leaf_nodes_have_null_left_and_right() {
   struct categories *categories = NULL;
+  struct hash_table_entry *hashTable = NULL;
+  int hashTableSize;
   int categoriesCount = 0;
   categoryTestInit(&categories, &categoriesCount);
-  appTestInit(categories, categoriesCount);
+  appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
   mu_assert("TEST FAIL: right != NULL", categories[0].root->right == NULL);
   mu_assert("TEST FAIL: left != NULL", categories[0].root->left->left == NULL);
   mu_assert("TEST FAIL: left != NULL", categories[0].root->left->right == NULL);
@@ -81,10 +85,23 @@ static char *test_leaf_nodes_have_null_left_and_right() {
 
 static char *test_fifa_is_left_of_minecraft() {
   struct categories *categories = NULL;
+  struct hash_table_entry *hashTable = NULL;
+  int hashTableSize;
   int categoriesCount = 0;
   categoryTestInit(&categories, &categoriesCount);
-  appTestInit(categories, categoriesCount);
+  appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
   mu_assert("TEST FAIL: left app name != 'FIFA ...'", strcmp(categories[0].root->left->record.app_name, "FIFA 16 Ultimate Team") == 0);
+  return 0;
+}
+
+static char *test_hash_table_size_is_next_prime() {
+  struct categories *categories = NULL;
+  struct hash_table_entry *hashTable = NULL;
+  int hashTableSize;
+  int categoriesCount = 0;
+  categoryTestInit(&categories, &categoriesCount);
+  appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
+  mu_assert("TEST FAIL: hashTableSize != 5", hashTableSize == 5);
   return 0;
 }
 
@@ -96,6 +113,7 @@ static char *allTests() {
   mu_run_test(test_can_create_root_record);
   mu_run_test(test_leaf_nodes_have_null_left_and_right);
   mu_run_test(test_fifa_is_left_of_minecraft);
+  mu_run_test(test_hash_table_size_is_next_prime);
   return 0;
 }
 

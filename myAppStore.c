@@ -6,7 +6,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdbool.h>
 
+static bool isPrime(int num)
+{
+  if (num <= 1) return false;
+  if (num % 2 == 0 && num > 2) return 0;
+  for(int i = 3; i < num / 2; i+= 2) {
+    if (num % i == 0)
+    return false;
+  }
+  return true;
+}
+
+static int nextPrime(int num) {
+  while (1) {
+    num++;
+    if (isPrime(num)) return num;
+  }
+}
 
 static int parseInteger(FILE *stream) {
   char *line = NULL;
@@ -129,8 +147,23 @@ static void addAppToCategory(struct categories *category, struct app_info appInf
   }
 }
 
-void parseAndCreateApplications(FILE *stream, struct categories *categories, int categoriesCount) {
+static struct hash_table_entry *createHashTable(int numberOfApps, int *hashTableSize) {
+  *hashTableSize = nextPrime(numberOfApps * 2);
+  return (struct hash_table_entry*)malloc(sizeof(struct hash_table_entry) * (*hashTableSize));
+}
+
+static void destroyHashTable(struct hash_table_entry **hashTable) {
+  free(*hashTable);
+  *hashTable = NULL;
+}
+
+void parseAndCreateApplications(FILE *stream,
+                                struct categories *categories,
+                                int categoriesCount,
+                                struct hash_table_entry **hashTable,
+                                int *hashTableSize) {
   int numberOfApps = parseInteger(stream);
+  *hashTable = createHashTable(numberOfApps, hashTableSize);
   for (int i = 0; i < numberOfApps; i++) {
     struct app_info appInfo;
     parseApp(stream, &appInfo);
