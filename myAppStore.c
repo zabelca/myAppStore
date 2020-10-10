@@ -149,12 +149,41 @@ static void addAppToCategory(struct categories *category, struct app_info appInf
 
 static struct hash_table_entry *createHashTable(int numberOfApps, int *hashTableSize) {
   *hashTableSize = nextPrime(numberOfApps * 2);
-  return (struct hash_table_entry*)malloc(sizeof(struct hash_table_entry) * (*hashTableSize));
+  return malloc(sizeof(struct hash_table_entry) * (*hashTableSize));
 }
 
 static void destroyHashTable(struct hash_table_entry **hashTable) {
   free(*hashTable);
   *hashTable = NULL;
+}
+
+static struct tree *findAppNodeInTree(struct tree *branch, struct app_info *appInfo) {
+  struct tree *retval = NULL;
+  if (strcmp(branch->record.app_name, appInfo->app_name) == 0) {
+    return branch;
+  } else if (branch->left != NULL && (retval = findAppNodeInTree(branch->left, appInfo))) {
+    return retval;
+  } else if (branch->right != NULL && (retval = findAppNodeInTree(branch->right, appInfo))) {
+    return retval;
+  } else {
+    return NULL;
+  }
+}
+
+static void addAppToHashTable(struct tree *branch,
+                              struct app_info *appInfo,
+                              struct hash_table_entry *hashTable,
+                              int hashTableSize) {
+  char *letter = appInfo->app_name;
+  int appNameTotal = 0;
+  while (*letter) {
+    appNameTotal = appNameTotal + (int)*letter;
+    letter++;
+  }
+  int position = (appNameTotal % hashTableSize);
+  strcpy(hashTable[position].app_name, appInfo->app_name);
+  hashTable[position].app_node = findAppNodeInTree(branch, appInfo);
+  hashTable[position].next = NULL;
 }
 
 void parseAndCreateApplications(FILE *stream,
@@ -169,6 +198,7 @@ void parseAndCreateApplications(FILE *stream,
     parseApp(stream, &appInfo);
     struct categories *foundCategory = findCategory(categories, categoriesCount, appInfo);
     addAppToCategory(foundCategory, appInfo);
+    addAppToHashTable(foundCategory->root, &appInfo, *hashTable, *hashTableSize);
   }
 }
 
