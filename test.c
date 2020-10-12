@@ -59,6 +59,13 @@ static void appTestInit(struct categories *categories, int categoriesCount, stru
   fclose(stream);
 }
 
+static void appTestCollisionInit(struct categories *categories, int categoriesCount, struct hash_table_entry **hashTable, int *hashTableSize) {
+  char buffer[] = "2\nGames\nMinecraft: Pocket Edition\n0.12.1\n24.1\nMB\n6.99\nGames\nPocket Edition: Minecraft\n2.0\n1.25\nGB\n0.00\n";
+  FILE *stream = fmemopen(buffer, sizeof(buffer) * sizeof(char), "r");
+  parseAndCreateApplications(stream, categories, categoriesCount, hashTable, hashTableSize);
+  fclose(stream);
+}
+
 static char *test_can_create_root_record() {
   struct categories *categories = NULL;
   struct hash_table_entry *hashTable = NULL;
@@ -129,6 +136,29 @@ static char *test_hash_table_contains_app_node_at_correct_position() {
   return 0;
 }
 
+static char *test_collision_replaces_app_in_hash_table() {
+  struct categories *categories = NULL;
+  struct hash_table_entry *hashTable = NULL;
+  int hashTableSize;
+  int categoriesCount = 0;
+  categoryTestInit(&categories, &categoriesCount);
+  appTestCollisionInit(categories, categoriesCount, &hashTable, &hashTableSize);
+  mu_assert("TEST FAIL: Pocket Edition app_name is not at position 3", strcmp(hashTable[3].app_name, "Pocket Edition: Minecraft") == 0);
+  return 0;
+}
+
+static char *test_collision_moves_previous_app_to_next() {
+  struct categories *categories = NULL;
+  struct hash_table_entry *hashTable = NULL;
+  int hashTableSize;
+  int categoriesCount = 0;
+  categoryTestInit(&categories, &categoriesCount);
+  appTestCollisionInit(categories, categoriesCount, &hashTable, &hashTableSize);
+  mu_assert("TEST FAIL: .next should not be NULL", hashTable[3].next != NULL);
+  mu_assert("TEST FAIL: Minecraft app_name is not at position 3.next", strcmp(hashTable[3].next->app_name, "Minecraft: Pocket Edition") == 0);
+  return 0;
+}
+
 static char *allTests() {
   mu_run_test(test_can_parse_category_count);
   mu_run_test(test_can_parse_and_create_category_names);
@@ -140,6 +170,8 @@ static char *allTests() {
   mu_run_test(test_hash_table_size_is_next_prime);
   mu_run_test(test_hash_table_contains_app_name_at_correct_position);
   mu_run_test(test_hash_table_contains_app_node_at_correct_position);
+  mu_run_test(test_collision_replaces_app_in_hash_table);
+  mu_run_test(test_collision_moves_previous_app_to_next);
   return 0;
 }
 

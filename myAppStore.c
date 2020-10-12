@@ -181,9 +181,19 @@ static void addAppToHashTable(struct tree *branch,
     letter++;
   }
   int position = (appNameTotal % hashTableSize);
+
+  if (hashTable[position].app_node != NULL) {
+    // Collision case
+    hashTable[position].next = malloc(sizeof(struct hash_table_entry));
+    strcpy(hashTable[position].next->app_name, hashTable[position].app_name);
+    hashTable[position].next->app_node = hashTable[position].app_node; 
+    hashTable[position].next->next = NULL;
+  } else {
+    hashTable[position].next = NULL;
+  }
+
   strcpy(hashTable[position].app_name, appInfo->app_name);
   hashTable[position].app_node = findAppNodeInTree(branch, appInfo);
-  hashTable[position].next = NULL;
 }
 
 void parseAndCreateApplications(FILE *stream,
