@@ -1,16 +1,21 @@
 CC=gcc
 CFLAGS=-I.
 DEPS = myAppStore.h
-OBJ = myAppStore.o test.o
+OBJ = myAppStore.o
+TESTOBJ = test.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-myAppStore: $(OBJ)
+myAppStore: $(OBJ) main.o
 	$(CC) -o $@ $^ $(CFLAGS)
 
-test: $(OBJ)
+test: $(TESTOBJ) $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 
 check: test
-	make && ./test
+	./test
+
+.PHONY: clean
+clean:
+	rm -f $(TESTOBJ) $(OBJ) test myAppStore
