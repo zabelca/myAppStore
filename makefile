@@ -14,7 +14,8 @@ test: $(TESTOBJ) $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 
 check: test
-	./test
+	@date
+	@./test
 
 .PHONY: clean
 clean:
