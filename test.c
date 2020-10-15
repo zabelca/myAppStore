@@ -166,13 +166,13 @@ static char *test_app_not_found_query() {
   int categoriesCount = 0;
   categoryTestInit(&categories, &categoriesCount);
   appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
-  char inBuffer[] = "find app foo bar\n";
+  char inBuffer[] = "1\nfind app foo bar\n";
   FILE *inStream = fmemopen(inBuffer, sizeof(inBuffer) * sizeof(char), "r");
   char outBuffer[128];
   FILE *outStream = fmemopen(outBuffer, sizeof(outBuffer) * sizeof(char), "w");
   parseQueries(inStream, outStream, hashTable, hashTableSize);
   fflush(outStream);
-  mu_assert("query didn't print 'Application foo bar not found'", strcmp(outBuffer, "Application foo bar not found\n") == 0);
+  mu_assert("query didn't print 'Application foo bar not found'", strncmp(outBuffer, "Application foo bar not found\n", 30) == 0);
   return 0;
 }
 
@@ -183,13 +183,13 @@ static char *test_app_query_prints_app_name_first() {
   int categoriesCount = 0;
   categoryTestInit(&categories, &categoriesCount);
   appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
-  char inBuffer[] = "find app Minecraft: Pocket Edition\n";
+  char inBuffer[] = "1\nfind app Minecraft: Pocket Edition\n";
   FILE *inStream = fmemopen(inBuffer, sizeof(inBuffer) * sizeof(char), "r");
   char outBuffer[128];
   FILE *outStream = fmemopen(outBuffer, sizeof(outBuffer) * sizeof(char), "w");
   parseQueries(inStream, outStream, hashTable, hashTableSize);
   fflush(outStream);
-  mu_assert("query didn't print 'Found Application: Minecraft: Pocket Edition'", strcmp(outBuffer, "Found Application: Minecraft: Pocket Edition\n") == 0);
+  mu_assert("query didn't print 'Found Application: Minecraft: Pocket Edition'", strncmp(outBuffer, "Found Application: Minecraft: Pocket Edition\n", 45) == 0);
   return 0;
 }
 

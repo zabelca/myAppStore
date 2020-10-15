@@ -48,19 +48,25 @@ void parseAndCreateCategories(FILE *stream, struct categories **categories, int 
 //    categoriesCount - number of categories
 void destroyCategories(struct categories **categories, int categoriesCount);
 
-// Puts the app into the binary tree.
+// Puts the app into the binary tree and hash table.
 // INPUT:
 //    stream - input stream where the text to parse will be read
 //    categories - Array of all categories
 //    categoriesCount - Number of categories
-//    hashTable - 
-//    hashTableSize - 
+//    hashTable - (OUTPUT) pointer that will be redirected to a newly allocated hash table entry
+//    hashTableSize - (OUTPUT) size of hash table
 void parseAndCreateApplications(FILE *stream,
                                 struct categories *categories,
                                 int categoriesCount,
                                 struct hash_table_entry **hashTable,
                                 int *hashTableSize);
 
+// Parses queries.
+// INPUT:
+//    inStream - input stream where the text to parse will be read
+//    outStream - output stream where query results will be written
+//    hashTable - the hash table with application data
+//    hashTableSize - the size of the hash table
 void parseQueries(FILE *inStream,
                   FILE *outStream,
                   struct hash_table_entry *hashTable,
