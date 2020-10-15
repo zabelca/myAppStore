@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "minunit.h"
  
 int tests_run = 0;
@@ -159,7 +160,7 @@ static char *test_collision_moves_previous_app_to_next() {
   return 0;
 }
 
-static char *test_app_not_found_query() {
+static char *test_find_app_query_with_missing_app() {
   struct categories *categories = NULL;
   struct hash_table_entry *hashTable = NULL;
   int hashTableSize;
@@ -176,7 +177,7 @@ static char *test_app_not_found_query() {
   return 0;
 }
 
-static char *test_app_query_prints_app_name_first() {
+static char *test_app_found_query() {
   struct categories *categories = NULL;
   struct hash_table_entry *hashTable = NULL;
   int hashTableSize;
@@ -185,11 +186,25 @@ static char *test_app_query_prints_app_name_first() {
   appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
   char inBuffer[] = "1\nfind app Minecraft: Pocket Edition\n";
   FILE *inStream = fmemopen(inBuffer, sizeof(inBuffer) * sizeof(char), "r");
-  char outBuffer[128];
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
   FILE *outStream = fmemopen(outBuffer, sizeof(outBuffer) * sizeof(char), "w");
   parseQueries(inStream, outStream, hashTable, hashTableSize);
   fflush(outStream);
-  mu_assert("query didn't print 'Found Application: Minecraft: Pocket Edition'", strncmp(outBuffer, "Found Application: Minecraft: Pocket Edition\n", 45) == 0);
+  mu_assert("query didn't print 'Found Application: Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "Found Application: Minecraft: Pocket Edition\n", 45) == 0);
+  pOutBuffer+=45;
+  mu_assert("query didn't print '<TAB>Category: Games<CR>'", strncmp(pOutBuffer, "\tCategory: Games\n", 17) == 0);
+  pOutBuffer+=17;
+  mu_assert("query didn't print '<TAB>Application Name: Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "\tApplication Name: Minecraft: Pocket Edition\n", 45) == 0);
+  pOutBuffer+=45;
+  mu_assert("query didn't print '<TAB>Version: 0.12.1<CR>'", strncmp(pOutBuffer, "\tVersion: 0.12.1\n", 17) == 0);
+  pOutBuffer+=17;
+  mu_assert("query didn't print '<TAB>Size: 24.10<CR>'", strncmp(pOutBuffer, "\tSize: 24.10\n", 13) == 0);
+  pOutBuffer+=13;
+  mu_assert("query didn't print '<TAB>Units: MB<CR>'", strncmp(pOutBuffer, "\tUnits: MB\n", 11) == 0);
+  pOutBuffer+=11;
+  mu_assert("query didn't print '<TAB>Price: 6.99<CR>'", strncmp(pOutBuffer, "\tPrice: 6.99\n", 13) == 0);
+  pOutBuffer+=13;
   return 0;
 }
 
@@ -206,8 +221,8 @@ static char *allTests() {
   mu_run_test(test_hash_table_contains_app_node_at_correct_position);
   mu_run_test(test_collision_replaces_app_in_hash_table);
   mu_run_test(test_collision_moves_previous_app_to_next);
-  mu_run_test(test_app_not_found_query);
-  mu_run_test(test_app_query_prints_app_name_first);
+  mu_run_test(test_find_app_query_with_missing_app);
+  mu_run_test(test_app_found_query);
   return 0;
 }
 

@@ -232,6 +232,12 @@ static void findAppQuery(char *queryString,
   bool result = findAppInHashTable(appName, hashTable, hashPosition);
   if (result) {
     fprintf(outStream, "Found Application: %s\n", appName);
+    fprintf(outStream, "\tCategory: %s\n", hashTable[hashPosition].app_node->record.category);
+    fprintf(outStream, "\tApplication Name: %s\n", hashTable[hashPosition].app_node->record.app_name);
+    fprintf(outStream, "\tVersion: %s\n", hashTable[hashPosition].app_node->record.version);
+    fprintf(outStream, "\tSize: %.2f\n", hashTable[hashPosition].app_node->record.size);
+    fprintf(outStream, "\tUnits: %s\n", hashTable[hashPosition].app_node->record.units);
+    fprintf(outStream, "\tPrice: %.2f\n", hashTable[hashPosition].app_node->record.price);
   } else {
     fprintf(outStream, "Application %s not found\n", appName);
   }
