@@ -46,7 +46,7 @@ void parseAndCreateCategories(FILE *stream, struct categories **categories, int 
 // INPUT:
 //    categories - (OUTPUT) pointer that will be set to NULL after freed
 //    categoriesCount - number of categories
-void destroyCategories(struct categories **categories, int categoriesCount);
+void freeCategories(struct categories **categories, int categoriesCount);
 
 // Puts the app into the binary tree and hash table.
 // INPUT:
@@ -60,6 +60,11 @@ void parseAndCreateApplications(FILE *stream,
                                 int categoriesCount,
                                 struct hash_table_entry **hashTable,
                                 int *hashTableSize);
+
+// Frees memory allocated for hashTable.
+// INPUT:
+//   hashTable - (IN/OUT) the hash table created in `parseAndCreateApplications`
+void freeHashTable(struct hash_table_entry **hashTable);
 
 // Parses queries.
 // INPUT:

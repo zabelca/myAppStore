@@ -12,5 +12,8 @@ int main(int argc, char *argv[]) {
 
   parseQueries(stdin, stdout, hashTable, hashTableSize);
 
+  freeCategories(&categories, categoriesCount);
+  freeHashTable(&hashTable);
+
   return 0;
 }

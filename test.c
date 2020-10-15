@@ -44,11 +44,11 @@ static char *test_categories_start_with_null_tree() {
   return 0;
 }
 
-static char *test_can_destroy_categories() {
+static char *test_can_free_categories() {
   struct categories *categories = NULL;
   int categoriesCount = 0;
   categoryTestInit(&categories, &categoriesCount);
-  destroyCategories(&categories, categoriesCount);
+  freeCategories(&categories, categoriesCount);
   mu_assert("categories != NULL", categories == NULL);
   return 0;
 }
@@ -212,7 +212,7 @@ static char *allTests() {
   mu_run_test(test_can_parse_category_count);
   mu_run_test(test_can_parse_and_create_category_names);
   mu_run_test(test_categories_start_with_null_tree);
-  mu_run_test(test_can_destroy_categories);
+  mu_run_test(test_can_free_categories);
   mu_run_test(test_can_create_root_record);
   mu_run_test(test_leaf_nodes_have_null_left_and_right);
   mu_run_test(test_fifa_is_left_of_minecraft);

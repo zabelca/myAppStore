@@ -71,25 +71,27 @@ void parseAndCreateCategories(FILE *stream, struct categories **categories, int 
   }
 }
 
-void destroyTree(struct tree **branch) {
+static void freeTree(struct tree **branch) {
   if (*branch != NULL) {
     if ((*branch)->left != NULL) {
-      destroyTree(&((*branch)->left));
+      freeTree(&((*branch)->left));
     }
     if ((*branch)->right != NULL) {
-      destroyTree(&((*branch)->right));
+      freeTree(&((*branch)->right));
     }
     free(*branch);
     *branch = NULL;
   }
 }
 
-void destroyCategories(struct categories **categories, int categoriesCount) {
-  for (int i = 0; i < categoriesCount; i++) {
-    destroyTree(&((*categories)[i].root));
+void freeCategories(struct categories **categories, int categoriesCount) {
+  if (*categories) {
+    for (int i = 0; i < categoriesCount; i++) {
+      freeTree(&((*categories)[i].root));
+    }
+    free(*categories);
+    *categories = NULL;
   }
-  free(*categories);
-  *categories = NULL;
 }
 
 static struct categories *findCategory(struct categories *categories, int categoriesCount, struct app_info appInfo) {
@@ -140,9 +142,11 @@ static struct hash_table_entry *createHashTable(int numberOfApps, int *hashTable
   return malloc(sizeof(struct hash_table_entry) * (*hashTableSize));
 }
 
-static void destroyHashTable(struct hash_table_entry **hashTable) {
-  free(*hashTable);
-  *hashTable = NULL;
+void freeHashTable(struct hash_table_entry **hashTable) {
+  if (*hashTable) {
+    free(*hashTable);
+    *hashTable = NULL;
+  }
 }
 
 static struct tree *findAppNodeInTree(struct tree *branch, struct app_info *appInfo) {
