@@ -159,6 +159,40 @@ static char *test_collision_moves_previous_app_to_next() {
   return 0;
 }
 
+static char *test_app_not_found_query() {
+  struct categories *categories = NULL;
+  struct hash_table_entry *hashTable = NULL;
+  int hashTableSize;
+  int categoriesCount = 0;
+  categoryTestInit(&categories, &categoriesCount);
+  appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
+  char inBuffer[] = "find app foo bar\n";
+  FILE *inStream = fmemopen(inBuffer, sizeof(inBuffer) * sizeof(char), "r");
+  char outBuffer[128];
+  FILE *outStream = fmemopen(outBuffer, sizeof(outBuffer) * sizeof(char), "w");
+  parseQueries(inStream, outStream, hashTable, hashTableSize);
+  fflush(outStream);
+  mu_assert("query didn't print 'Application foo bar not found'", strcmp(outBuffer, "Application foo bar not found\n") == 0);
+  return 0;
+}
+
+static char *test_app_query_prints_app_name_first() {
+  struct categories *categories = NULL;
+  struct hash_table_entry *hashTable = NULL;
+  int hashTableSize;
+  int categoriesCount = 0;
+  categoryTestInit(&categories, &categoriesCount);
+  appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
+  char inBuffer[] = "find app Minecraft: Pocket Edition\n";
+  FILE *inStream = fmemopen(inBuffer, sizeof(inBuffer) * sizeof(char), "r");
+  char outBuffer[128];
+  FILE *outStream = fmemopen(outBuffer, sizeof(outBuffer) * sizeof(char), "w");
+  parseQueries(inStream, outStream, hashTable, hashTableSize);
+  fflush(outStream);
+  mu_assert("query didn't print 'Found Application: Minecraft: Pocket Edition'", strcmp(outBuffer, "Found Application: Minecraft: Pocket Edition\n") == 0);
+  return 0;
+}
+
 static char *allTests() {
   mu_run_test(test_can_parse_category_count);
   mu_run_test(test_can_parse_and_create_category_names);
@@ -172,6 +206,8 @@ static char *allTests() {
   mu_run_test(test_hash_table_contains_app_node_at_correct_position);
   mu_run_test(test_collision_replaces_app_in_hash_table);
   mu_run_test(test_collision_moves_previous_app_to_next);
+  mu_run_test(test_app_not_found_query);
+  mu_run_test(test_app_query_prints_app_name_first);
   return 0;
 }
 

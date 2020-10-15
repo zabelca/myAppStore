@@ -61,4 +61,9 @@ void parseAndCreateApplications(FILE *stream,
                                 struct hash_table_entry **hashTable,
                                 int *hashTableSize);
 
+void parseQueries(FILE *inStream,
+                  FILE *outStream,
+                  struct hash_table_entry *hashTable,
+                  int hashTableSize);
+
 #endif

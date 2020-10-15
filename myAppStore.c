@@ -62,18 +62,6 @@ static void parseApp(FILE *stream, struct app_info *appInfo) {
   appInfo->price = parseFloat(stream);
 }
 
-/* static void queryAppStore(struct app_info appInfo[], int numberOfApps, char *queryString, FILE *ostream) { */
-/*   char name[APP_NAME_LEN]; */
-/*   sscanf(queryString, "%*s %*s %[^\n]", name); */
-/*   for (int i = 0; i < numberOfApps; i++) { */
-/*     if (strcmp(name, appInfo[i].app_name) == 0) { */
-/*       fprintf(ostream, "Found Application: %s\n", name); */
-/*       return; */
-/*     } */
-/*   } */
-/*   fprintf(ostream, "Application %s not found\n", name); */
-/* } */
-
 void parseAndCreateCategories(FILE *stream, struct categories **categories, int *categoriesCount) {
   *categoriesCount = parseInteger(stream);
   *categories = (struct categories *)malloc(*categoriesCount * sizeof(struct categories));
@@ -211,4 +199,57 @@ void parseAndCreateApplications(FILE *stream,
     addAppToHashTable(foundCategory->root, &appInfo, *hashTable, *hashTableSize);
   }
 }
+
+static int searchHashTable(struct hash_table_entry *hashTable, int hashTableSize, char *appName) {  
+  char *letter = appName;
+  int appNameTotal = 0;
+  while (*letter) {
+    appNameTotal = appNameTotal + (int)*letter;
+    letter++;
+  }
+  int position = (appNameTotal % hashTableSize);
+  return position;
+}
+
+static bool findAppQuery(char *appName, struct hash_table_entry *hashTable, int hashPosition) {
+  printf("*** %s\n", hashTable[hashPosition].app_name);
+  printf("*** %s\n", appName);
+  if (hashTable[hashPosition].app_name == NULL) {
+    return false;
+  } else if (strcmp(appName, hashTable[hashPosition].app_name) == 0) {
+    return true;
+  } else {
+    return findAppQuery(appName, hashTable->next, hashPosition);
+  }
+}
+
+void parseQueries(FILE *inStream,
+                  FILE *outStream,
+                  struct hash_table_entry *hashTable,
+                  int hashTableSize) {
+  
+  char appName[APP_NAME_LEN];
+  char queryString[1024];
+  parseString(inStream, queryString, APP_NAME_LEN);
+  sscanf(queryString, "%*s %*s %[^\n]", appName);
+  int hashPosition = searchHashTable(hashTable, hashTableSize, appName);
+  int result = findAppQuery(appName, hashTable, hashPosition);
+  if (result) {
+    fprintf(outStream, "Found Application: %s\n", hashTable[hashPosition].app_name);
+  } else {
+    fprintf(outStream, "Application foo bar not found\n");
+  }
+}
+
+/* static void queryAppStore(struct app_info appInfo[], int numberOfApps, char *queryString, FILE *ostream) { */
+/*   char name[APP_NAME_LEN]; */
+/*   sscanf(queryString, "%*s %*s %[^\n]", name); */
+/*   for (int i = 0; i < numberOfApps; i++) { */
+/*     if (strcmp(name, appInfo[i].app_name) == 0) { */
+/*       fprintf(ostream, "Found Application: %s\n", name); */
+/*       return; */
+/*     } */
+/*   } */
+/*   fprintf(ostream, "Application %s not found\n", name); */
+/* } */
 
