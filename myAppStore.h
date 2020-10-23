@@ -75,6 +75,8 @@ void freeHashTable(struct hash_table_entry **hashTable);
 void parseQueries(FILE *inStream,
                   FILE *outStream,
                   struct hash_table_entry *hashTable,
-                  int hashTableSize);
+                  int hashTableSize,
+                  struct categories *categories,
+                  int categoriesCount);
 
 #endif

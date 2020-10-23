@@ -160,37 +160,32 @@ static char *test_collision_moves_previous_app_to_next() {
   return 0;
 }
 
-static char *test_find_app_query_with_missing_app() {
+static void query(char *query, char *resultBuffer, int resultBufferSize) {
   struct categories *categories = NULL;
   struct hash_table_entry *hashTable = NULL;
   int hashTableSize;
   int categoriesCount = 0;
   categoryTestInit(&categories, &categoriesCount);
   appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
-  char inBuffer[] = "1\nfind app foo bar\n";
-  FILE *inStream = fmemopen(inBuffer, sizeof(inBuffer) * sizeof(char), "r");
-  char outBuffer[128];
-  FILE *outStream = fmemopen(outBuffer, sizeof(outBuffer) * sizeof(char), "w");
-  parseQueries(inStream, outStream, hashTable, hashTableSize);
+  FILE *inStream = fmemopen(query, strlen(query) + 1, "r");
+  FILE *outStream = fmemopen(resultBuffer, resultBufferSize, "w");
+  parseQueries(inStream, outStream, hashTable, hashTableSize, categories, categoriesCount);
   fflush(outStream);
+  freeHashTable(&hashTable);
+  freeCategories(&categories, categoriesCount);
+}
+
+static char *test_find_app_query_with_missing_app() {
+  char outBuffer[128];
+  query("1\nfind app foo bar\n", outBuffer, 128);
   mu_assert("query didn't print 'Application foo bar not found'", strncmp(outBuffer, "Application foo bar not found\n", 30) == 0);
   return 0;
 }
 
 static char *test_app_found_query() {
-  struct categories *categories = NULL;
-  struct hash_table_entry *hashTable = NULL;
-  int hashTableSize;
-  int categoriesCount = 0;
-  categoryTestInit(&categories, &categoriesCount);
-  appTestInit(categories, categoriesCount, &hashTable, &hashTableSize);
-  char inBuffer[] = "1\nfind app Minecraft: Pocket Edition\n";
-  FILE *inStream = fmemopen(inBuffer, sizeof(inBuffer) * sizeof(char), "r");
   char outBuffer[1024];
   char *pOutBuffer = outBuffer;
-  FILE *outStream = fmemopen(outBuffer, sizeof(outBuffer) * sizeof(char), "w");
-  parseQueries(inStream, outStream, hashTable, hashTableSize);
-  fflush(outStream);
+  query("1\nfind app Minecraft: Pocket Edition\n", outBuffer, 1024);
   mu_assert("query didn't print 'Found Application: Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "Found Application: Minecraft: Pocket Edition\n", 45) == 0);
   pOutBuffer+=45;
   mu_assert("query didn't print '<TAB>Category: Games<CR>'", strncmp(pOutBuffer, "\tCategory: Games\n", 17) == 0);
@@ -205,6 +200,33 @@ static char *test_app_found_query() {
   pOutBuffer+=11;
   mu_assert("query didn't print '<TAB>Price: 6.99<CR>'", strncmp(pOutBuffer, "\tPrice: 6.99\n", 13) == 0);
   pOutBuffer+=13;
+  return 0;
+}
+
+static char *test_find_category_query_with_missing_category() {
+  char outBuffer[128];
+  query("1\nfind category foo bar\n", outBuffer, 128);
+  mu_assert("query didn't print 'Category foo bar not found'", strncmp(outBuffer, "Category foo bar not found\n", 27) == 0);
+  return 0;
+}
+
+static char *test_find_category_query_with_empty_category() {
+  char outBuffer[128];
+  query("1\nfind category Medical\n", outBuffer, 128);
+  mu_assert("query didn't print 'Category Medical no apps found'", strncmp(outBuffer, "Category Medical no apps found\n", 31) == 0);
+  return 0;
+}
+
+static char *test_find_category_with_apps_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nfind category Games\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Category: Games'", strncmp(pOutBuffer, "Category: Games\n", 16) == 0);
+  pOutBuffer+=16;
+  mu_assert("query didn't print '<TAB>FIFA 16 Ultimate Team<CR>'", strncmp(pOutBuffer, "\tFIFA 16 Ultimate Team\n", 23) == 0);
+  pOutBuffer+=23;
+  mu_assert("query didn't print '<TAB>Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "\tMinecraft: Pocket Edition\n", 27) == 0);
+  pOutBuffer+=27;
   return 0;
 }
 
@@ -223,6 +245,9 @@ static char *allTests() {
   mu_run_test(test_collision_moves_previous_app_to_next);
   mu_run_test(test_find_app_query_with_missing_app);
   mu_run_test(test_app_found_query);
+  mu_run_test(test_find_category_query_with_missing_category);
+  mu_run_test(test_find_category_query_with_empty_category);
+  mu_run_test(test_find_category_with_apps_query);
   return 0;
 }
 

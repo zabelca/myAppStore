@@ -94,9 +94,9 @@ void freeCategories(struct categories **categories, int categoriesCount) {
   }
 }
 
-static struct categories *findCategory(struct categories *categories, int categoriesCount, struct app_info appInfo) {
+static struct categories *findCategory(struct categories *categories, int categoriesCount, char *appInfoCategory) {
   for (int j = 0; j < categoriesCount; j++) {
-    if (strcmp(appInfo.category, categories[j].category) == 0) {
+    if (strcmp(appInfoCategory, categories[j].category) == 0) {
       return &(categories[j]);
     }
   }
@@ -198,7 +198,7 @@ void parseAndCreateApplications(FILE *stream,
   for (int i = 0; i < numberOfApps; i++) {
     struct app_info appInfo;
     parseApp(stream, &appInfo);
-    struct categories *foundCategory = findCategory(categories, categoriesCount, appInfo);
+    struct categories *foundCategory = findCategory(categories, categoriesCount, appInfo.category);
     addAppToCategory(foundCategory, appInfo);
     addAppToHashTable(foundCategory->root, &appInfo, *hashTable, *hashTableSize);
   }
@@ -247,10 +247,44 @@ static void findAppQuery(char *queryString,
   }
 }
 
+static void printAppNamesInCategory(FILE *outStream, struct tree *root) {
+  if (root->left != NULL) {
+    printAppNamesInCategory(outStream, root->left);
+  }
+
+  fprintf(outStream, "\t%s\n", root->record.app_name);
+  if (root->right != NULL) {
+    printAppNamesInCategory(outStream, root->right);
+  }
+}
+
+static void findCatQuery(char *queryString,
+                         FILE *outStream,
+                         struct hash_table_entry *hashTable,
+                         int hashTableSize,
+                         struct categories *categories,
+                         int categoriesCount) {
+  char catName[CAT_NAME_LEN];
+  sscanf(queryString, "%*s %*s %[^\n]", catName);
+  struct categories *category = findCategory(categories, categoriesCount, catName);
+  if (category) {
+    if (category->root != NULL /* how can we tell if a category has apps. to check if the root is not null */) {
+      fprintf(outStream, "Category: %s\n", catName);
+      printAppNamesInCategory(outStream, category->root);
+    } else {
+      fprintf(outStream, "Category %s no apps found\n", catName);
+    }
+  } else {
+    fprintf(outStream, "Category foo bar not found\n");
+  }
+}
+
 void parseQueries(FILE *inStream,
                   FILE *outStream,
                   struct hash_table_entry *hashTable,
-                  int hashTableSize) {
+                  int hashTableSize,
+                  struct categories *categories,
+                  int categoriesCount) {
   int queryCount = 0;
   queryCount = parseInteger(inStream);
   for (int i = 0; i < queryCount; i++) {
@@ -260,6 +294,9 @@ void parseQueries(FILE *inStream,
     if (strncmp("find app", queryString, 8) == 0) {
       if (i != 0) fprintf(outStream, "\n");
       findAppQuery(queryString, outStream, hashTable, hashTableSize);
+    } else if (strncmp("find category", queryString, 13) == 0) {
+      if (i != 0) fprintf(outStream, "\n");
+      findCatQuery(queryString, outStream, hashTable, hashTableSize, categories, categoriesCount);
     }
   }
 }

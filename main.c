@@ -10,10 +10,10 @@ int main(int argc, char *argv[]) {
   int hashTableSize = 0;
   parseAndCreateApplications(stdin, categories, categoriesCount, &hashTable, &hashTableSize);
 
-  parseQueries(stdin, stdout, hashTable, hashTableSize);
+  parseQueries(stdin, stdout, hashTable, hashTableSize, categories, categoriesCount);
 
-  freeCategories(&categories, categoriesCount);
   freeHashTable(&hashTable);
+  freeCategories(&categories, categoriesCount);
 
   return 0;
 }
