@@ -253,6 +253,7 @@ static void printAppNamesInCategory(FILE *outStream, struct tree *root) {
   }
 
   fprintf(outStream, "\t%s\n", root->record.app_name);
+
   if (root->right != NULL) {
     printAppNamesInCategory(outStream, root->right);
   }
@@ -279,6 +280,42 @@ static void findCatQuery(char *queryString,
   }
 }
 
+static int printFreeApps(FILE *outStream, struct tree *root) {
+  int freeAppCount = 0;
+  
+  if (root != NULL) {
+    if (root->left != NULL) {
+      freeAppCount += printFreeApps(outStream, root->left);
+    }
+
+    if (root->record.price == 0.0f) {
+      freeAppCount++;
+      fprintf(outStream, "\t%s\n", root->record.app_name);
+    }
+
+    if (root->right != NULL) {
+      freeAppCount += printFreeApps(outStream, root->right);
+    }
+  }
+
+  return freeAppCount;
+}
+
+static void findPriceFreeQuery(char *queryString,
+                               FILE *outStream,
+                               struct hash_table_entry *hashTable,
+                               int hashTableSize,
+                               struct categories *categories,
+                               int categoriesCount) {
+  for (int i = 0; i < categoriesCount; i++) {
+    fprintf(outStream, "Free Applications in Category: %s\n", categories[i].category);
+    int freeAppCount = printFreeApps(outStream, categories[i].root);
+    if (freeAppCount == 0) {
+      fprintf(outStream, "\tNo free applications found\n");
+    }
+  }
+}
+
 void parseQueries(FILE *inStream,
                   FILE *outStream,
                   struct hash_table_entry *hashTable,
@@ -297,6 +334,9 @@ void parseQueries(FILE *inStream,
     } else if (strncmp("find category", queryString, 13) == 0) {
       if (i != 0) fprintf(outStream, "\n");
       findCatQuery(queryString, outStream, hashTable, hashTableSize, categories, categoriesCount);
+    } else if (strncmp("find price free", queryString, 15) == 0) {
+      if (i != 0) fprintf(outStream, "\n");
+      findPriceFreeQuery(queryString, outStream, hashTable, hashTableSize, categories, categoriesCount);
     }
   }
 }

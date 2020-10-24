@@ -178,7 +178,7 @@ static void query(char *query, char *resultBuffer, int resultBufferSize) {
 static char *test_find_app_query_with_missing_app() {
   char outBuffer[128];
   query("1\nfind app foo bar\n", outBuffer, 128);
-  mu_assert("query didn't print 'Application foo bar not found'", strncmp(outBuffer, "Application foo bar not found\n", 30) == 0);
+  mu_assert("query didn't print 'Application foo bar not found<CR>'", strncmp(outBuffer, "Application foo bar not found\n", 30) == 0);
   return 0;
 }
 
@@ -206,14 +206,14 @@ static char *test_app_found_query() {
 static char *test_find_category_query_with_missing_category() {
   char outBuffer[128];
   query("1\nfind category foo bar\n", outBuffer, 128);
-  mu_assert("query didn't print 'Category foo bar not found'", strncmp(outBuffer, "Category foo bar not found\n", 27) == 0);
+  mu_assert("query didn't print 'Category foo bar not found<CR>'", strncmp(outBuffer, "Category foo bar not found\n", 27) == 0);
   return 0;
 }
 
 static char *test_find_category_query_with_empty_category() {
   char outBuffer[128];
   query("1\nfind category Medical\n", outBuffer, 128);
-  mu_assert("query didn't print 'Category Medical no apps found'", strncmp(outBuffer, "Category Medical no apps found\n", 31) == 0);
+  mu_assert("query didn't print 'Category Medical no apps found<CR>'", strncmp(outBuffer, "Category Medical no apps found\n", 31) == 0);
   return 0;
 }
 
@@ -221,12 +221,31 @@ static char *test_find_category_with_apps_query() {
   char outBuffer[1024];
   char *pOutBuffer = outBuffer;
   query("1\nfind category Games\n", outBuffer, 1024);
-  mu_assert("query didn't print 'Category: Games'", strncmp(pOutBuffer, "Category: Games\n", 16) == 0);
+  mu_assert("query didn't print 'Category: Games<CR>'", strncmp(pOutBuffer, "Category: Games\n", 16) == 0);
   pOutBuffer+=16;
   mu_assert("query didn't print '<TAB>FIFA 16 Ultimate Team<CR>'", strncmp(pOutBuffer, "\tFIFA 16 Ultimate Team\n", 23) == 0);
   pOutBuffer+=23;
   mu_assert("query didn't print '<TAB>Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "\tMinecraft: Pocket Edition\n", 27) == 0);
   pOutBuffer+=27;
+  return 0;
+}
+
+static char *test_find_price_free_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nfind price free\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Free Applications in Category: Games<CR>'", strncmp(pOutBuffer, "Free Applications in Category: Games\n", 37) == 0);
+  pOutBuffer+=37;
+  mu_assert("query didn't print '<TAB>FIFA 16 Ultimate Team<CR>'", strncmp(pOutBuffer, "\tFIFA 16 Ultimate Team\n", 23) == 0);
+  pOutBuffer+=23;
+  mu_assert("query didn't print 'Free Applications in Category: Medical<CR>'", strncmp(pOutBuffer, "Free Applications in Category: Medical\n", 39) == 0);
+  pOutBuffer+=39;
+  mu_assert("query didn't print '<TAB>No free applications found<CR>'", strncmp(pOutBuffer, "\tNo free applications found\n", 28) == 0);
+  pOutBuffer+=28;
+  mu_assert("query didn't print 'Free Applications in Category: Social Networking'", strncmp(pOutBuffer, "Free Applications in Category: Social Networking\n", 49) == 0);
+  pOutBuffer+=49;
+  mu_assert("query didn't print '<TAB>No free applications found<CR>'", strncmp(pOutBuffer, "\tNo free applications found\n", 28) == 0);
+  pOutBuffer+=28;
   return 0;
 }
 
@@ -248,6 +267,7 @@ static char *allTests() {
   mu_run_test(test_find_category_query_with_missing_category);
   mu_run_test(test_find_category_query_with_empty_category);
   mu_run_test(test_find_category_with_apps_query);
+  mu_run_test(test_find_price_free_query);
   return 0;
 }
 
