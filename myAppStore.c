@@ -230,7 +230,7 @@ static void findAppQuery(char *queryString,
                          struct hash_table_entry *hashTable,
                          int hashTableSize) {
   char appName[APP_NAME_LEN];
-  sscanf(queryString, "%*s %*s %[^\n]", appName);
+  sscanf(queryString, "%*s %*s \"%[^\n\"]\"", appName);
 
   int hashPosition = searchHashTable(hashTableSize, appName);
   bool result = findAppInHashTable(appName, hashTable, hashPosition);
@@ -266,7 +266,7 @@ static void findCatQuery(char *queryString,
                          struct categories *categories,
                          int categoriesCount) {
   char catName[CAT_NAME_LEN];
-  sscanf(queryString, "%*s %*s %[^\n]", catName);
+  sscanf(queryString, "%*s %*s \"%[^\n\"]\"", catName);
   struct categories *category = findCategory(categories, categoriesCount, catName);
   if (category) {
     if (category->root != NULL /* how can we tell if a category has apps. to check if the root is not null */) {
@@ -316,6 +316,61 @@ static void findPriceFreeQuery(char *queryString,
   }
 }
 
+static void printRangePrice(FILE *outStream, struct tree *root, float low, float high) {
+  if (root != NULL) {
+    if (root->left != NULL) {
+      printRangePrice(outStream, root->left, low, high);
+    }
+
+    if (root->record.price >= low && root->record.price <= high) {
+      fprintf(outStream, "\t%s\n", root->record.app_name);
+    }
+
+    if (root->right != NULL) {
+      printRangePrice(outStream, root->right, low, high);
+    }
+  }
+}
+
+static int getAppCountForRangePrice(FILE *outStream, struct tree *root, float low, float high) {
+  int freeAppCount = 0;
+
+  if (root != NULL) {
+    if (root->left != NULL) {
+      freeAppCount += getAppCountForRangePrice(outStream, root->left, low, high);
+    }
+
+    if (root->record.price >= low && root->record.price <= high) {
+      freeAppCount++;
+    }
+
+    if (root->right != NULL) {
+      freeAppCount += getAppCountForRangePrice(outStream, root->right, low, high);
+    }
+  }
+  return freeAppCount;
+}
+
+static void rangePriceQuery(char *queryString,
+                            FILE *outStream,
+                            struct hash_table_entry *hashTable,
+                            int hashTableSize,
+                            struct categories *categories,
+                            int categoriesCount) {
+  float low = 0.0;
+  float high = 0.0;
+  char catName[CAT_NAME_LEN];
+  sscanf(queryString, "%*s \"%[^\"]\" %*s %f %f", catName, &low, &high);
+  struct categories *category = findCategory(categories, categoriesCount, catName);
+  int appCount = getAppCountForRangePrice(outStream, category->root, low, high);
+  if (appCount) {
+    fprintf(outStream, "Applications in Price Range (%.2f,%.2f) in Category: %s\n", low, high, catName);
+    printRangePrice(outStream, category->root, low, high);
+  } else {
+    fprintf(outStream, "No applications found in %s for the given price range (%.2f,%.2f)\n", catName, low, high);
+  }
+}
+
 void parseQueries(FILE *inStream,
                   FILE *outStream,
                   struct hash_table_entry *hashTable,
@@ -337,6 +392,14 @@ void parseQueries(FILE *inStream,
     } else if (strncmp("find price free", queryString, 15) == 0) {
       if (i != 0) fprintf(outStream, "\n");
       findPriceFreeQuery(queryString, outStream, hashTable, hashTableSize, categories, categoriesCount);
+    } else if (strncmp("range", queryString, 5) == 0) {
+      char rangeQueryString[5];
+      sscanf(queryString, "%*s %*s %s %*[^\n]", rangeQueryString);
+      if (strcmp(rangeQueryString, "price") == 0) {
+        rangePriceQuery(queryString, outStream, hashTable, hashTableSize, categories, categoriesCount);
+      } else if (strcmp(rangeQueryString, "app") == 0) {
+        //rangeAppQuery();
+      }
     }
   }
 }

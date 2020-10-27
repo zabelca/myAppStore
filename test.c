@@ -177,7 +177,7 @@ static void query(char *query, char *resultBuffer, int resultBufferSize) {
 
 static char *test_find_app_query_with_missing_app() {
   char outBuffer[128];
-  query("1\nfind app foo bar\n", outBuffer, 128);
+  query("1\nfind app \"foo bar\"\n", outBuffer, 128);
   mu_assert("query didn't print 'Application foo bar not found<CR>'", strncmp(outBuffer, "Application foo bar not found\n", 30) == 0);
   return 0;
 }
@@ -185,7 +185,7 @@ static char *test_find_app_query_with_missing_app() {
 static char *test_app_found_query() {
   char outBuffer[1024];
   char *pOutBuffer = outBuffer;
-  query("1\nfind app Minecraft: Pocket Edition\n", outBuffer, 1024);
+  query("1\nfind app \"Minecraft: Pocket Edition\"\n", outBuffer, 1024);
   mu_assert("query didn't print 'Found Application: Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "Found Application: Minecraft: Pocket Edition\n", 45) == 0);
   pOutBuffer+=45;
   mu_assert("query didn't print '<TAB>Category: Games<CR>'", strncmp(pOutBuffer, "\tCategory: Games\n", 17) == 0);
@@ -205,14 +205,14 @@ static char *test_app_found_query() {
 
 static char *test_find_category_query_with_missing_category() {
   char outBuffer[128];
-  query("1\nfind category foo bar\n", outBuffer, 128);
+  query("1\nfind category \"foo bar\"\n", outBuffer, 128);
   mu_assert("query didn't print 'Category foo bar not found<CR>'", strncmp(outBuffer, "Category foo bar not found\n", 27) == 0);
   return 0;
 }
 
 static char *test_find_category_query_with_empty_category() {
   char outBuffer[128];
-  query("1\nfind category Medical\n", outBuffer, 128);
+  query("1\nfind category \"Medical\"\n", outBuffer, 128);
   mu_assert("query didn't print 'Category Medical no apps found<CR>'", strncmp(outBuffer, "Category Medical no apps found\n", 31) == 0);
   return 0;
 }
@@ -220,7 +220,7 @@ static char *test_find_category_query_with_empty_category() {
 static char *test_find_category_with_apps_query() {
   char outBuffer[1024];
   char *pOutBuffer = outBuffer;
-  query("1\nfind category Games\n", outBuffer, 1024);
+  query("1\nfind category \"Games\"\n", outBuffer, 1024);
   mu_assert("query didn't print 'Category: Games<CR>'", strncmp(pOutBuffer, "Category: Games\n", 16) == 0);
   pOutBuffer+=16;
   mu_assert("query didn't print '<TAB>FIFA 16 Ultimate Team<CR>'", strncmp(pOutBuffer, "\tFIFA 16 Ultimate Team\n", 23) == 0);
@@ -249,6 +249,62 @@ static char *test_find_price_free_query() {
   return 0;
 }
 
+static char *test_range_price_no_app_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Medical\" price 0.00 10.00\n", outBuffer, 1024);
+  mu_assert("query didn't print 'No applications found in Medical for the given price range (0.00,10.00)<CR>'",
+      strncmp(pOutBuffer, "No applications found in Medical for the given price range (0.00,10.00)\n", 72) == 0);
+  return 0;
+}
+
+static char *test_range_price_out_of_range_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Games\" price 100.00 110.00\n", outBuffer, 1024);
+  mu_assert("query didn't print 'No applications found in Games for the given price range (100.00,110.00)<CR>'",
+      strncmp(pOutBuffer, "No applications found in Games for the given price range (100.00,110.00)\n", 73) == 0);
+  return 0;
+}
+
+static char *test_range_price_lower_bounds_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Games\" price 6.00 6.99\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Applications in Price Range (6.00,6.99) in Category: Games<CR>'",
+      strncmp(pOutBuffer, "Applications in Price Range (6.00,6.99) in Category: Games\n", 59) == 0);
+  pOutBuffer+=59;
+  mu_assert("query didn't print '<TAB>Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "\tMinecraft: Pocket Edition\n", 27) == 0);
+  pOutBuffer+=27;
+  return 0;
+}
+
+static char *test_range_price_upper_bounds_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Games\" price 6.99 8.00\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Applications in Price Range (6.99,8.00) in Category: Games<CR>'",
+      strncmp(pOutBuffer, "Applications in Price Range (6.99,8.00) in Category: Games\n", 59) == 0);
+  pOutBuffer+=59;
+  mu_assert("query didn't print '<TAB>Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "\tMinecraft: Pocket Edition\n", 27) == 0);
+  pOutBuffer+=27;
+  return 0;
+}
+
+static char *test_range_price_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Games\" price 0.00 8.00\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Applications in Price Range (0.00,8.00) in Category: Games<CR>'",
+      strncmp(pOutBuffer, "Applications in Price Range (0.00,8.00) in Category: Games\n", 59) == 0);
+  pOutBuffer+=59;
+  mu_assert("query didn't print '<TAB>FIFA 16 Ultimate Team<CR>'", strncmp(pOutBuffer, "\tFIFA 16 Ultimate Team\n", 23) == 0);
+  pOutBuffer+=23;
+  mu_assert("query didn't print '<TAB>Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "\tMinecraft: Pocket Edition\n", 27) == 0);
+  pOutBuffer+=27;
+  return 0;
+}
+
 static char *allTests() {
   mu_run_test(test_can_parse_category_count);
   mu_run_test(test_can_parse_and_create_category_names);
@@ -268,6 +324,11 @@ static char *allTests() {
   mu_run_test(test_find_category_query_with_empty_category);
   mu_run_test(test_find_category_with_apps_query);
   mu_run_test(test_find_price_free_query);
+  mu_run_test(test_range_price_no_app_query);
+  mu_run_test(test_range_price_out_of_range_query);
+  mu_run_test(test_range_price_lower_bounds_query);
+  mu_run_test(test_range_price_upper_bounds_query);
+  mu_run_test(test_range_price_query);
   return 0;
 }
 
