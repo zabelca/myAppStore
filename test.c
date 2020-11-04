@@ -182,6 +182,19 @@ static char *test_find_app_query_with_missing_app() {
   return 0;
 }
 
+static char *test_two_queries() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("2\nfind app \"foo bar\"\nfind app \"bar foo\"\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Application foo bar not found<CR>'", strncmp(pOutBuffer, "Application foo bar not found\n", 30) == 0);
+  pOutBuffer+=30;
+  mu_assert("query didn't print '<CR>'", strncmp(pOutBuffer, "\n", 1) == 0);
+  pOutBuffer+=1;
+  mu_assert("query didn't print 'Application bar foo not found<CR>'", strncmp(pOutBuffer, "Application bar foo not found\n", 30) == 0);
+  pOutBuffer+=30;
+  return 0;
+}
+
 static char *test_app_found_query() {
   char outBuffer[1024];
   char *pOutBuffer = outBuffer;
@@ -305,6 +318,104 @@ static char *test_range_price_query() {
   return 0;
 }
 
+static char *test_range_app_no_app_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Medical\" app A Z\n", outBuffer, 1024);
+  mu_assert("query didn't print 'No applications found in Medical for the given range (A,Z)<CR>'",
+      strncmp(pOutBuffer, "No applications found in Medical for the given range (A,Z)\n", 59) == 0);
+  return 0;
+}
+
+static char *test_range_app_out_of_range_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Games\" app AA CC\n", outBuffer, 1024);
+  mu_assert("query didn't print 'No applications found in Games for the given range (AA,CC)<CR>'",
+      strncmp(pOutBuffer, "No applications found in Games for the given range (AA,CC)\n", 59) == 0);
+  return 0;
+}
+
+static char *test_range_app_lower_bounds_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Games\" app FIFA FJ\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Applications in Range (FIFA,FJ) in Category: Games<CR>'",
+      strncmp(pOutBuffer, "Applications in Range (FIFA,FJ) in Category: Games\n", 51) == 0);
+  pOutBuffer+=51;
+  mu_assert("query didn't print '<TAB>FIFA 16 Ultimate Team<CR>'", strncmp(pOutBuffer, "\tFIFA 16 Ultimate Team\n", 22) == 0);
+  pOutBuffer+=22;
+  return 0;
+}
+
+static char *test_range_app_upper_bounds_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Games\" app M Minecrafu\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Applications in Range (M,Minecrafu) in Category: Games<CR>'",
+      strncmp(pOutBuffer, "Applications in Range (M,Minecrafu) in Category: Games\n", 55) == 0);
+  pOutBuffer+=55;
+  mu_assert("query didn't print '<TAB>Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "\tMinecraft: Pocket Edition\n", 27) == 0);
+  pOutBuffer+=27;
+  return 0;
+}
+
+static char *test_range_app_query() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\nrange \"Games\" app A Z\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Applications in Range (A,Z) in Category: Games<CR>'",
+      strncmp(pOutBuffer, "Applications in Range (A,Z) in Category: Games\n", 47) == 0);
+  pOutBuffer+=47;
+  mu_assert("query didn't print '<TAB>FIFA 16 Ultimate Team<CR>'", strncmp(pOutBuffer, "\tFIFA 16 Ultimate Team\n", 23) == 0);
+  pOutBuffer+=23;
+  mu_assert("query didn't print '<TAB>Minecraft: Pocket Edition<CR>'", strncmp(pOutBuffer, "\tMinecraft: Pocket Edition\n", 27) == 0);
+  pOutBuffer+=27;
+  return 0;
+}
+
+static char *test_missing_category_app_not_removed_after_delete() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\ndelete \"foo bar\" \"FIFA 16 Ultimate Team\"", outBuffer, 1024);
+  mu_assert("query didn't print 'Application FIFA 16 Ultimate Team not found in category foo bar; unable to delete<CR>'",
+      strncmp(pOutBuffer, "Application FIFA 16 Ultimate Team not found in category foo bar; unable to delete\n", 83) == 0);
+  return 0;
+}
+
+static char *test_missing_app_not_removed_after_delete() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\ndelete \"Medical\" \"FIFA 16 Ultimate Team\"", outBuffer, 1024);
+  mu_assert("query didn't print 'Application FIFA 16 Ultimate Team not found in category Medical; unable to delete<CR>'",
+      strncmp(pOutBuffer, "Application FIFA 16 Ultimate Team not found in category Medical; unable to delete\n", 83) == 0);
+  return 0;
+}
+
+static char *test_app_removed_after_delete() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("1\ndelete \"Games\" \"FIFA 16 Ultimate Team\"", outBuffer, 1024);
+  mu_assert("query didn't print 'Application FIFA 16 Ultimate Team from Category Games successfully deleted<CR>'",
+      strncmp(pOutBuffer, "Application FIFA 16 Ultimate Team from Category Games successfully deleted\n", 75) == 0);
+  return 0;
+}
+
+static char *test_app_not_found_after_delete() {
+  char outBuffer[1024];
+  char *pOutBuffer = outBuffer;
+  query("2\ndelete \"Games\" \"FIFA 16 Ultimate Team\"\nfind app \"FIFA 16 Ultimate Team\"\n", outBuffer, 1024);
+  mu_assert("query didn't print 'Application FIFA 16 Ultimate Team from Category Games successfully deleted<CR>'",
+      strncmp(pOutBuffer, "Application FIFA 16 Ultimate Team from Category Games successfully deleted\n", 75) == 0);
+  pOutBuffer+=75;
+  mu_assert("query didn't print '<CR>'", strncmp(pOutBuffer, "\n", 1) == 0);
+  pOutBuffer+=1;
+  mu_assert("query didn't print 'Application FIFA 16 Ultimate Team not found<CR>'",
+      strncmp(pOutBuffer, "Application FIFA 16 Ultimate Team not found\n", 44) == 0);
+  pOutBuffer+=44;
+  return 0;
+}
+
 static char *allTests() {
   mu_run_test(test_can_parse_category_count);
   mu_run_test(test_can_parse_and_create_category_names);
@@ -319,6 +430,7 @@ static char *allTests() {
   mu_run_test(test_collision_replaces_app_in_hash_table);
   mu_run_test(test_collision_moves_previous_app_to_next);
   mu_run_test(test_find_app_query_with_missing_app);
+  mu_run_test(test_two_queries);
   mu_run_test(test_app_found_query);
   mu_run_test(test_find_category_query_with_missing_category);
   mu_run_test(test_find_category_query_with_empty_category);
@@ -329,6 +441,15 @@ static char *allTests() {
   mu_run_test(test_range_price_lower_bounds_query);
   mu_run_test(test_range_price_upper_bounds_query);
   mu_run_test(test_range_price_query);
+  mu_run_test(test_range_app_no_app_query);
+  mu_run_test(test_range_app_out_of_range_query); 
+  mu_run_test(test_range_app_lower_bounds_query);
+  mu_run_test(test_range_app_upper_bounds_query);
+  mu_run_test(test_range_app_query);
+  mu_run_test(test_missing_category_app_not_removed_after_delete);
+  mu_run_test(test_missing_app_not_removed_after_delete);
+  mu_run_test(test_app_removed_after_delete);
+  mu_run_test(test_app_not_found_after_delete);
   return 0;
 }
 

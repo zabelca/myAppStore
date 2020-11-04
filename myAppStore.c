@@ -371,6 +371,154 @@ static void rangePriceQuery(char *queryString,
   }
 }
 
+static void printRangeApp(FILE *outStream, struct tree *root, char *low, char *high) {
+  if (root != NULL) {
+    if (root->left != NULL) {
+      printRangeApp(outStream, root->left, low, high);
+    }
+
+    if ((strcmp(root->record.app_name, high) < 0) && (strcmp(root->record.app_name, low) > 0)) {
+      fprintf(outStream, "\t%s\n", root->record.app_name);
+    }
+
+    if (root->right != NULL) {
+      printRangeApp(outStream, root->right, low, high);
+    }
+  }
+}
+
+static int getAppCountForRangeApp(FILE *outStream, struct tree *root, char *low, char *high) {
+  int freeAppCount = 0;
+
+  if (root != NULL) {
+    if (root->left != NULL) {
+      freeAppCount += getAppCountForRangeApp(outStream, root->left, low, high);
+    }
+
+    if ((strcmp(root->record.app_name, high) < 0) && (strcmp(root->record.app_name, low) > 0)) {
+      freeAppCount++;
+    }
+
+    if (root->right != NULL) {
+      freeAppCount += getAppCountForRangeApp(outStream, root->right, low, high);
+    }
+  }
+  return freeAppCount;
+}
+
+static void rangeAppQuery(char *queryString,
+                          FILE *outStream,
+                          struct hash_table_entry *hashTable,
+                          int hashTableSize,
+                          struct categories *categories,
+                          int categoriesCount) {
+  char low[32];
+  char high[32];
+  char catName[CAT_NAME_LEN];
+  sscanf(queryString, "%*s \"%[^\"]\" %*s %s %s", catName, low, high);
+  struct categories *category = findCategory(categories, categoriesCount, catName);
+  int appCount = getAppCountForRangeApp(outStream, category->root, low, high);
+  if (appCount) {
+    fprintf(outStream, "Applications in Range (%s,%s) in Category: %s\n", low, high, catName);
+    printRangeApp(outStream, category->root, low, high);
+  } else {
+    fprintf(outStream, "No applications found in %s for the given range (%s,%s)\n", catName, low, high);
+  }
+}
+
+static bool deleteFromTree(struct tree **branch, struct tree *parent, char *appName) {
+  bool appDeleted = false;
+  struct tree *root = *branch;
+
+  if (root != NULL) {
+    if (root->left != NULL) {
+      appDeleted |= deleteFromTree(&(root->left), root, appName);
+    }
+
+    if (strcmp(root->record.app_name, appName) == 0) {
+      appDeleted = true;
+
+      if (root->left != NULL && root->right == NULL) {
+        parent->left = root->left;
+      } else if (root->left == NULL && root->right != NULL) {
+        parent->right = root->right;
+      } else if (root->left != NULL && root->right != NULL) {
+        // TODO: make this work
+      }
+
+      free(*branch);
+      *branch = NULL;
+    }
+
+    if (root->right != NULL) {
+      appDeleted |= deleteFromTree(&(root->right), root, appName);
+    }
+  }
+
+  return appDeleted;
+}
+
+static bool deleteFromHashTable(char *appName, struct hash_table_entry *hashTable, int hashTableSize) {
+  int hashPosition = searchHashTable(hashTableSize, appName);
+
+  bool appFound = false;
+  bool atRoot = true;
+  struct hash_table_entry *previousHashTableEntry = NULL;
+  struct hash_table_entry *currentHashTableEntry = &(hashTable[hashPosition]);
+
+  while (currentHashTableEntry != NULL) {
+    if (strcmp(appName, currentHashTableEntry->app_name) == 0) {
+      if (atRoot) {
+        if (currentHashTableEntry->next != NULL) {
+          strcpy(currentHashTableEntry->app_name, currentHashTableEntry->next->app_name);
+          currentHashTableEntry->app_node = currentHashTableEntry->next->app_node;
+          currentHashTableEntry->next = currentHashTableEntry->next->next;
+        } else {
+          strcpy(currentHashTableEntry->app_name, "");
+          currentHashTableEntry->app_node = NULL;
+          currentHashTableEntry->next = NULL;
+        }
+      } else {
+        previousHashTableEntry->next = currentHashTableEntry->next;
+      }
+      appFound = true;
+      break;
+    }
+
+    previousHashTableEntry = currentHashTableEntry;
+    currentHashTableEntry = currentHashTableEntry->next;
+    atRoot = false;
+  }
+
+  return appFound;
+}
+
+static void deleteQuery(char *queryString,
+                        FILE *outStream,
+                        struct hash_table_entry *hashTable,
+                        int hashTableSize,
+                        struct categories *categories,
+                        int categoriesCount) {
+  bool appDeleted = false;
+  char catName[CAT_NAME_LEN];
+  char appName[APP_NAME_LEN];
+  sscanf(queryString, "%*s \"%[^\"]\" \"%[^\"]\"", catName, appName);
+  struct categories *foundCategory = findCategory(categories, categoriesCount, catName);
+
+  if (foundCategory) {
+    if (deleteFromTree(&(foundCategory->root), NULL, appName)) {
+      if (deleteFromHashTable(appName, hashTable, hashTableSize)) {
+        fprintf(outStream, "Application %s from Category %s successfully deleted\n", appName, catName);
+        appDeleted = true;
+      }
+    }
+  }
+
+  if (! appDeleted) {
+    fprintf(outStream, "Application %s not found in category %s; unable to delete\n", appName, catName);
+  }
+}
+
 void parseQueries(FILE *inStream,
                   FILE *outStream,
                   struct hash_table_entry *hashTable,
@@ -398,8 +546,10 @@ void parseQueries(FILE *inStream,
       if (strcmp(rangeQueryString, "price") == 0) {
         rangePriceQuery(queryString, outStream, hashTable, hashTableSize, categories, categoriesCount);
       } else if (strcmp(rangeQueryString, "app") == 0) {
-        //rangeAppQuery();
+        rangeAppQuery(queryString, outStream, hashTable, hashTableSize, categories, categoriesCount);
       }
+    } else if (strncmp("delete", queryString, 5) == 0) {
+      deleteQuery(queryString, outStream, hashTable, hashTableSize, categories, categoriesCount);
     }
   }
 }
