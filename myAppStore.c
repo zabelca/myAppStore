@@ -426,32 +426,45 @@ static void rangeAppQuery(char *queryString,
   }
 }
 
-static bool deleteFromTree(struct tree **branch, struct tree *parent, char *appName) {
-  bool appDeleted = false;
-  struct tree *root = *branch;
+struct tree *findInOrderSuccessor(struct tree *branch) {
+  if (branch->left) {
+    return findInOrderSuccessor(branch->left);
+  } else {
+    return branch;
+  }
+}
 
-  if (root != NULL) {
-    if (root->left != NULL) {
-      appDeleted |= deleteFromTree(&(root->left), root, appName);
+static bool deleteFromTree(struct tree *branch, struct tree *parent, char *appName) {
+  bool appDeleted = false;
+
+  if (branch != NULL) {
+    if (branch->left != NULL) {
+      appDeleted |= deleteFromTree(branch->left, branch, appName);
     }
 
-    if (strcmp(root->record.app_name, appName) == 0) {
+    if (strcmp(branch->record.app_name, appName) == 0) {
       appDeleted = true;
 
-      if (root->left != NULL && root->right == NULL) {
-        parent->left = root->left;
-      } else if (root->left == NULL && root->right != NULL) {
-        parent->right = root->right;
-      } else if (root->left != NULL && root->right != NULL) {
-        // TODO: make this work
+      if (branch->left != NULL && branch->right == NULL) {
+        parent->left = branch->left;
+        free(branch);
+        branch = NULL;
+      } else if (branch->left == NULL && branch->right != NULL) {
+        parent->right = branch->right;
+        free(branch);
+        branch = NULL;
+      } else if (branch->left != NULL && branch->right != NULL) {
+        struct tree *pSuccessor = findInOrderSuccessor(branch->right);
+        branch->record = pSuccessor->record;
+        branch->left = pSuccessor->left;
+        branch->right = pSuccessor->right;
+        free(pSuccessor);
+        pSuccessor = NULL;
       }
-
-      free(*branch);
-      *branch = NULL;
     }
 
-    if (root->right != NULL) {
-      appDeleted |= deleteFromTree(&(root->right), root, appName);
+    if (branch->right != NULL) {
+      appDeleted |= deleteFromTree(branch->right, branch, appName);
     }
   }
 
@@ -506,7 +519,7 @@ static void deleteQuery(char *queryString,
   struct categories *foundCategory = findCategory(categories, categoriesCount, catName);
 
   if (foundCategory) {
-    if (deleteFromTree(&(foundCategory->root), NULL, appName)) {
+    if (deleteFromTree(foundCategory->root, NULL, appName)) {
       if (deleteFromHashTable(appName, hashTable, hashTableSize)) {
         fprintf(outStream, "Application %s from Category %s successfully deleted\n", appName, catName);
         appDeleted = true;
